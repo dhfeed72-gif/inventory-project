@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>일일 재고 현황표</title>
+    <style>
+        /* 기본 설정 */
+        body { font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; margin: 20px; background-color: #ffffff; }
+        
+        /* 상단 헤더 */
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid #333; }
+        .header h1 { margin: 0; font-size: 24px; color: #333; display: flex; align-items: center; gap: 10px;}
+        .controls { display: flex; gap: 10px; align-items: center; }
+        
+        /* 레이아웃 분할 */
+        .container { display: flex; gap: 30px; }
+        
+        /* 왼쪽: 재고 지도 */
+        .map-section { flex: 3; }
+        .grid-wrapper { display: flex; flex-wrap: wrap; gap: 20px; }
+        
+        /* 개별 동그라미 디자인 */
+        .circle {
+            width: 80px; height: 80px;
+            border-radius: 50%;
+            border: 1px solid #aaa;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            text-align: center;
+            background: #fff;
+            position: relative;
+        }
+        
+        /* 데이터 텍스트 스타일 */
+        .c-type { font-size: 11px; font-weight: bold; margin-bottom: 2px; color: #333; }
+        .c-qty { font-size: 14px; font-weight: 900; color: #000; }
+        .c-loc { font-size: 10px; color: #999; margin-top: 3px; }
+
+        /* 특정 품목 색상 처리 (이미지 참고) */
+        .type-WCRS .c-type { color: #d32f2f; } /* 빨강 */
+        .type-WASW .c-type, .type-WUSH .c-type, .type-WUSL9 .c-type { color: #1976d2; } /* 파랑 */
+        .type-YBG2 .c-type { color: #f57f17; } /* 주황/갈색 */
+
+        /* 오른쪽: 요약 표 */
+        .table-section { flex: 1.2; }
+        table { width: 100%; border-collapse: collapse; border: 2px solid #333; }
+        th, td { border: 1px solid #aaa; padding: 6px 10px; text-align: center; font-size: 13px; }
+        th { background-color: #f0f0f0; font-weight: bold; }
+        /* 합계 행 스타일 */
+        .total-row { background-color: #eee; font-weight: bold; }
+        /* 숫자 우측 정렬 */
+        td.num { text-align: right; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="title-area">
+            <h1>🏗️ 일일 재고 현황표</h1>
+            <div style="font-size: 14px; margin-top: 5px;">조회: 2026-01-08 📅</div>
+        </div>
+        
+        <form action="/" method="post" enctype="multipart/form-data" class="controls">
+            <input type="file" name="file" accept=".xlsx, .xls" style="border: 1px solid #ccc; padding: 5px;">
+            <button type="submit" style="padding: 5px 15px; cursor: pointer; background: #eee; border: 1px solid #999;">업로드</button>
+        </form>
+    </div>
+
+    <div class="container">
+        <div class="map-section">
+            <div class="grid-wrapper">
+                {% for item in inventory %}
+                <div class="circle type-{{ item.type.split('.')[0] }}">
+                    <div class="c-type">{{ item.type }}</div>
+                    <div class="c-qty">{{ "{:,}".format(item.qty) }}</div>
+                    <div class="c-loc">{{ item.location }}</div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="table-section">
+            <table>
+                <thead>
+                    <tr>
+                        <th>구분</th>
+                        <th>A 구역</th>
+                        <th>B 구역</th>
+                        <th>계</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% set totals = namespace(a=0, b=0, all=0) %}
+                    {% for type, val in summary.items() %}
+                    <tr>
+                        <td style="font-weight: bold; color: #333;">{{ type }}</td>
+                        <td class="num">{{ "{:,}".format(val.A) }}</td>
+                        <td class="num">{{ "{:,}".format(val.B) }}</td>
+                        <td class="num" style="font-weight:bold;">{{ "{:,}".format(val.Total) }}</td>
+                    </tr>
+                    {% set totals.a = totals.a + val.A %}
+                    {% set totals.b = totals.b + val.B %}
+                    {% set totals.all = totals.all + val.Total %}
+                    {% endfor %}
+                    
+                    <tr class="total-row">
+                        <td>합계</td>
+                        <td class="num">{{ "{:,}".format(totals.a) }}</td>
+                        <td class="num">{{ "{:,}".format(totals.b) }}</td>
+                        <td class="num">{{ "{:,}".format(totals.all) }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</body>
+</html>
